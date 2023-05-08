@@ -1,0 +1,37 @@
+# Execute each data quality test and generate an HTML report
+results = []
+for index, row in df.iterrows():
+    schema_name = row['schema']
+    table_name = row['table_name']
+    column_name = row['column_name']
+    validation_rule = row['validation_rule']
+    sql_query = row['sql_query'].replace("<schema_name>", schema_name)
+
+    # Execute the SQL query for the data quality validation
+    result = engine.execute(sql_query).fetchall()
+
+    # Check if the result equals 'PASSED'
+    if len(result) == 1 and result[0][0] == 'PASSED':
+        status = 'PASSED'
+    else:
+        status = 'FAILED'
+
+    # Create a Pandas DataFrame from the query result
+    result_df = pd.DataFrame(result, columns=[desc[0] for desc in result._metadata])
+
+    # Add the results to the list of results
+    results.append({
+        'test_name': row['test_name'],
+        'schema_name': schema_name,
+        'table_name': table_name,
+        'column_name': column_name,
+        'validation_rule': validation_rule,
+        'result_df': result_df,
+        'status': status,
+        'run_timestamp': pd.Timestamp.now()
+    })
+
+    # Insert the test result into the data quality test table
+    insert_query = f"INSERT INTO data_quality_test_results (test_name, schema_name, table_name, column_name, validation_rule, status, run_timestamp) " \
+                   f"VALUES ('{row['test_name']}', '{schema_name}', '{table_name}', '{column_name}', '{validation_rule}', '{status}', '{pd.Timestamp.now()}')"
+    engine.execute(insert_query)
