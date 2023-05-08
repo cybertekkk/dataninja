@@ -1,0 +1,25 @@
+# Execute the SQL query for the data quality validation
+result = engine.execute(sql_query).fetchall()
+
+# Check if the result is 'PASSED'
+if result[0][0] == 'PASSED':
+    # Update the status and timestamp for the validation rule in the data quality tests table
+    update_query = f"UPDATE data_quality_tests SET status='PASSED', last_run_timestamp=CURRENT_TIMESTAMP WHERE validation_rule='{validation_rule}'"
+    engine.execute(update_query)
+else:
+    # Update the status and timestamp for the validation rule in the data quality tests table
+    update_query = f"UPDATE data_quality_tests SET status='FAILED', last_run_timestamp=CURRENT_TIMESTAMP WHERE validation_rule='{validation_rule}'"
+    engine.execute(update_query)
+
+# Create a Pandas DataFrame from the query result
+result_df = pd.DataFrame(result, columns=[desc[0] for desc in result._metadata])
+
+# Add the results to the list of results
+results.append({
+    'test_name': row['test_name'],
+    'schema_name': schema_name,
+    'table_name': table_name,
+    'column_name': column_name,
+    'validation_rule': validation_rule,
+    'result_df': result_df
+})
