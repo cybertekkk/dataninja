@@ -1,0 +1,212 @@
+import snowflake.connector
+import pandas as pd
+from sqlalchemy import create_engine
+from snowflake.sqlalchemy import URL
+import win32com.client as win32
+from datetime import datetime
+
+# Create a Snowflake connection using the Snowflake Connector library
+conn = snowflake.connector.connect(
+    user='<your_username>',
+    password='<your_password>',
+    account='<your_account>',
+    warehouse='<your_warehouse>',
+    database='<your_database>',
+    schema='<your_schema>'
+)
+
+# Create a SQLAlchemy engine object using the Snowflake Connector connection
+engine = create_engine(URL(
+    user=conn._user,
+    password=conn._password,
+    account=conn._account,
+    database=conn._database,
+    schema=conn._schema,
+    warehouse=conn._warehouse,
+    dialect='snowflake'
+))
+
+# Load the data quality tests from Snowflake into a Pandas DataFrame using SQLAlchemy
+query = "SELECT * FROM data_quality_tests"
+df = pd.read_sql(query, engine)
+
+# Execute each data quality test and generate an HTML report
+results = []
+for index, row in df.iterrows():
+    schema_name = row['schema']
+    table_name = row['table_name']
+    column_name = row['column_name']
+    validation_rule = row['validation_rule']
+    sql_query = row['sql_query'].replace("<schema_name>", schema_name)
+
+    # Execute the SQL query for the data quality validation
+    result = engine.execute(sql_query).fetchone()
+    if result is None:
+        # Skip the test if no result is returned
+        results.append({
+            'test_name': row['test_name'],
+            'status': 'SKIPPED',
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        continue
+    else:
+        result = result[0]
+
+    # Determine the status of the test based on the result
+    if result == 'PASSED':
+        status = 'PASSED'
+    elif result == 'FAILED':
+        status = 'FAILED'
+    else:
+        # Skip the test if the result is not 'PASSED' or 'FAILED'
+        results.append({
+            'test_name': row['test_name'],
+            'status': 'SKIPPED',
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        continue
+
+    # Add the results to the list of results
+    results.append({
+        'test_name': row['test_name'],
+        'schema_name': schema_name,
+        'table_name': table_name,
+        'column_name': column_name,
+        'validation_rule': validation_rule,
+        'status': status,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+# Update the data quality tests table with the results
+for result in results:
+    query = f"UPDATE data_quality_tests SET status='{result['status']}', timestamp='{result['timestamp']}' WHERE test_name='{result['test_name']}'"
+    engine.execute(query)
+
+# Generate an HTML report for all the data quality tests
+report_html = "<html><body>"
+for result in results:
+    report_html += f"<h1>{result['test_name']}</h1>"
+    report_html += f"<p>Schema: {result['schema_name']}</p>"
+    report_html += f"<p>Table: {result['table_name']}</p>"
+    report_html += f"<p>Column: {result['column_name']}</p>"
+    report_html += f"<p>Validation rule: {result['validation_rule']}</p>"
+    if result['status'] == 'PASSED':
+        report_html += "<p>Status: PASSED</p>"
+        report_html += f"<p>Run Timestamp: {result['timestamp']}</p>"
+        report_html += result['result_df'].to_html(index=False)
+    elif result['status'] == 'FAILED':
+        report_html += "<p>Status: FAILED</p>"
+        report_html += f"<p>Run Timestamp: {result['timestamp']}</p>"
+        report_html += result['result_df'].to_html(index=False)
+    else:
+        report_html += "<p>Status: SKIPPED</p>"
+    report_html += "<hr>"
+report_html += "</body></html>"
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////
+import snowflake.connector
+import pandas as pd
+from sqlalchemy import create_engine
+from snowflake.sqlalchemy import URL
+import win32com.client as win32
+from datetime import datetime
+import configparser
+import base64
+
+# Load the configuration file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Decrypt the password
+encrypted_password = config.get('Snowflake', 'password')
+password = base64.b64decode(encrypted_password).decode()
+
+# Create a Snowflake connection using the Snowflake Connector library
+conn = snowflake.connector.connect(
+    user=config.get('Snowflake', 'user'),
+    password=password,
+    account=config.get('Snowflake', 'account'),
+    warehouse=config.get('Snowflake', 'warehouse'),
+    database=config.get('Snowflake', 'database'),
+    schema=config.get('Snowflake', 'schema')
+)
+
+# Create a SQLAlchemy engine object using the Snowflake Connector connection
+engine = create_engine(URL(
+    user=conn._user,
+    password=conn._password,
+    account=conn._account,
+    database=conn._database,
+    schema=conn._schema,
+    warehouse=conn._warehouse,
+    dialect='snowflake'
+))
+
+# Load the data quality tests from Snowflake into a Pandas DataFrame using SQLAlchemy
+query = "SELECT * FROM data_quality_tests"
+df = pd.read_sql(query, engine)
+
+# Execute each data quality test and generate an HTML report
+results = []
+for index, row in df.iterrows():
+    schema_name = row['schema']
+    table_name = row['table_name']
+    column_name = row['column_name']
+    validation_rule = row['validation_rule']
+    sql_query = row['sql_query'].replace("<schema_name>", schema_name)
+
+    # Execute the SQL query for the data quality validation
+    result = engine.execute(sql_query).fetchone()
+    if result is None:
+        # Skip the test if no result is returned
+        results.append({
+            'test_name': row['test_name'],
+            'status': 'SKIPPED',
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        continue
+    else:
+        result = result[0]
+
+    # Determine the status of the test based on the result
+    if result == 'PASSED':
+        status = 'PASSED'
+    elif result == 'FAILED':
+        status = 'FAILED'
+    else:
+        # Skip the test if the result is not 'PASSED' or 'FAILED'
+        results.append({
+            'test_name': row['test_name'],
+            'status': 'SKIPPED',
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        continue
+
+    # Add the results to the list of results
+    results.append({
+        'test_name': row['test_name'],
+        'schema_name': schema_name,
+        'table_name': table_name,
+        'column_name': column_name,
+        'validation_rule': validation_rule,
+        'status': status,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+# Update the data quality tests table with the results
+for result in results:
+    query = f"UPDATE data_quality_tests SET status='{result['status']}', timestamp='{result['timestamp']}' WHERE test_name='{result['test_name']}'"
+    engine.execute(query)
+
+# Generate an HTML report for all the data quality tests
+report_html = "<html><body>"
+for result in results:
+    report_html += f"<h1>{result['
