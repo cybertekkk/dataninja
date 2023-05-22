@@ -1,0 +1,33 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.user.ApplicationUser
+
+// Define the group(s) you want to extract users from
+def groupNames = ["group1", "group2"]
+
+// Get the UserManager component
+def userManager = ComponentAccessor.getUserManager()
+
+// Get the CrowdService component
+def crowdService = ComponentAccessor.getCrowdService()
+
+// Iterate over the group names
+groupNames.each { groupName ->
+    // Get the group object by name
+    def group = crowdService.getGroup(groupName)
+
+    // Get all users in the group
+    def groupUsers = userManager.getUsersInGroup(group)
+
+    // Print user information
+    groupUsers.each { ApplicationUser user ->
+        // Get the last login date for each user
+        def lastLogin = userManager.getLastLoginTime(user)
+
+        // Print the username, full name, email, and last login date
+        println "Username: ${user.getUsername()}"
+        println "Full Name: ${user.getDisplayName()}"
+        println "Email: ${user.getEmailAddress()}"
+        println "Last Login: ${lastLogin}"
+        println "------------------------"
+    }
+}
