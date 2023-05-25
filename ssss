@@ -1,0 +1,31 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.user.util.UserUtil
+import com.atlassian.jira.user.ApplicationUser
+import groovy.json.JsonBuilder
+
+UserUtil userUtil = ComponentAccessor.getUserUtil()
+
+int licenses = 0
+
+def lstjson = []
+
+userUtil.getUsers().each { ApplicationUser user ->
+    if (user.isActive() && user.hasApplicationAccess("com.atlassian.servicedesk")) {
+        def output = [
+            user: user.getEmailAddress(),
+            displayName: user.getDisplayName()
+        ]
+        licenses++
+        lstjson.add(output)
+    }
+}
+
+def json = new JsonBuilder()
+json.items lstjson
+
+File file = new File("/yourServerPath/licenses.json")
+file.withWriter { writer ->
+    writer.write(json.toString())
+}
+
+return licenses
