@@ -1,0 +1,33 @@
+import com.atlassian.jira.bc.user.UserService
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.security.groups.GroupManager
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.user.UserPropertyManager
+
+// Set the group name
+def groupName = "Your Group Name"
+
+// Get the group manager
+GroupManager groupManager = ComponentAccessor.getComponent(GroupManager)
+
+// Get the group
+def group = groupManager.getGroup(groupName)
+
+// Get the user service
+UserService userService = ComponentAccessor.getComponent(UserService)
+
+// Get the user property manager
+UserPropertyManager userPropertyManager = ComponentAccessor.getUserPropertyManager()
+
+// Get the group members
+def members = userService.getUsersFromGroupNames([group.getName()])
+
+// Iterate through the group members
+members.each { ApplicationUser user ->
+    // Get the user's last login time
+    def lastLoginProperty = userPropertyManager.getPropertySet(user).getPropertyEntry("jira.lastlogin.time")
+    def lastLogin = lastLoginProperty?.getValue()
+
+    // Print the username and last login time
+    println "Username: ${user.getUsername()}, Last Login: ${lastLogin}"
+}
