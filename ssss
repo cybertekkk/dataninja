@@ -29,3 +29,75 @@ file.withWriter { writer ->
 }
 
 return licenses
+import snowflake.connector
+import pandas as pd
+from sqlalchemy import create_engine
+from snowflake.sqlalchemy import URL
+
+conn=snowflake.connector.connect(
+    user='',
+    password='',
+    account='',
+    warehouse='',
+    database=''
+)
+
+# Create a Snowflake connection using the Snowflake Connector library
+url= URL(
+    drivername='',
+    user='',
+    password=')>>K',
+    account='',
+    warehouse='',
+    database=''
+)
+
+# Create a SQLAlchemy engine object using the Snowflake Connector connection
+engine = create_engine(url)
+
+# Load the data quality tests from Snowflake into a Pandas DataFrame using SQLAlchemy
+query = "SELECT * FROM qa_tests where run_flag='Y'"
+df = pd.read_sql(query, engine)
+
+tests_by_test_id= df.groupby('test_id')
+
+# Execute each data quality test and generate an HTML report
+for test_id, group in tests_by_test_id:
+    #Generate a report for each table in the group
+    for index, row in group.iterrows():
+        schema_name = row['schema_name']
+        table_name = row['table_name']
+        column_name = row['column_name']
+        validation_rule = row['validation_rule']
+        sql_query = row['sql_query'].replace("<schema_name>", schema_name)
+        sql_query= """{}
+        """.format(sql_query) 
+        
+
+   # Execute the SQL query for the data quality validation
+    cur = conn.cursor()
+    cur.execute(sql_query)
+
+    print(sql_query)
+    result = cur.fetchall()
+
+    # Convert the query result to a DataFrame and format it as an HTML table
+    result_df = pd.DataFrame(result, columns=[desc[0] for desc in cur.description])
+    result_html = result_df.to_html(index=False)
+
+    # Generate an HTML report for the data quality test
+    report_html = f"<h1>{row['test_id']}-{row['test_name']}</h1>"
+    report_html += f"<p><b>Schema:</b> {schema_name}</p>"
+    report_html += f"<p><b>Table:</b> {table_name}</p>"
+    report_html += f"<p><b>Column:</b> {column_name}</p>"
+    report_html += f"<p><b>Validation rule:</b> {validation_rule}</p>"
+    report_html += f"<p><b>Validation rule:</b> {sql_query}</p>"
+    
+    report_html += '<img src="file:///C:\DQA-scripts/logo.png" width="300" style= "position: absolute; bottom:0; right:0;">'
+    report_html += result_html
+
+
+    # Save the HTML report to a file
+    filename = f"{row['test_id']}_{row['test_name']}_{row['table_name']}.html"
+    with open(filename, "w") as file:
+        file.write(report_html)
