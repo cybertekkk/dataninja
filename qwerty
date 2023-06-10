@@ -31,3 +31,14 @@ members.each { ApplicationUser user ->
     // Print the username and last login time
     println("Username: " + user.getUsername() + ", Last Login: " + lastLogin)
 }
+
+
+
+
+if result:  # Check if the result is not empty
+            status = 'PASSED'
+        else:
+            status = 'FAILED'
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        update_query = f"UPDATE qa_tests SET status='{status}', timestamp='{timestamp}' WHERE test_id='{row['test_id']}'"
+        engine.execute(update_query)
