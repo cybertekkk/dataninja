@@ -104,6 +104,25 @@ for result in results:
 report_html += "</body></html>"
 
 
+# Create an Outlook Application object
+outlook = win32.Dispatch('Outlook.Application')
+
+# Create a new email
+email = outlook.CreateItem(0)
+email.Subject = 'Data Quality Test Report'
+email.HTMLBody = report_html
+
+# Add recipients (to, cc, bcc)
+email.To = 'recipient@example.com'
+email.CC = 'cc_recipient@example.com'
+email.BCC = 'bcc_recipient@example.com'
+
+# Add attachments
+attachment_path = 'path/to/report.html'  # Provide the path where the report will be saved
+email.Attachments.Add(attachment_path)
+
+# Send the email
+email.Send()
 
 
 
