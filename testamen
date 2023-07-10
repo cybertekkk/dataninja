@@ -106,3 +106,114 @@ WHERE NOT EXISTS (
   WHERE f.dimension_key = d.dimension_key
     AND (f.attribute1 IS NOT NULL OR f.attribute2 IS NOT NULL)
 )
+
+
+
+
+
+
+-- Table to store table names
+CREATE TABLE table_names (
+  table_name VARCHAR
+);
+
+-- Table to store column names
+CREATE TABLE column_names (
+  table_name VARCHAR,
+  column_name VARCHAR
+);
+
+
+
+-- Insert table names
+INSERT INTO table_names (table_name)
+VALUES ('source_table'), ('target_table');
+
+-- Insert column names for source_table
+INSERT INTO column_names (table_name, column_name)
+VALUES ('source_table', 'column1'), ('source_table', 'column2');
+
+-- Insert column names for target_table
+INSERT INTO column_names (table_name, column_name)
+VALUES ('target_table', 'column1'), ('target_table', 'column2');
+
+
+
+CREATE OR REPLACE PROCEDURE VALIDATE_INSERT_UPDATE_RECORDS()
+RETURNS VARIANT
+LANGUAGE SQL
+AS
+$$
+DECLARE
+  target_hashes VARIANT;
+  source_hashes VARIANT;
+  insert_records VARIANT;
+  update_records VARIANT;
+BEGIN
+  -- Retrieve table names
+  target_table_name := (
+    SELECT table_name
+    FROM table_names
+    WHERE table_name = 'target_table'
+  );
+  
+  source_table_name := (
+    SELECT table_name
+    FROM table_names
+    WHERE table_name = 'source_table'
+  );
+  
+  -- Retrieve column names for target table
+  target_column_names := (
+    SELECT ARRAY_AGG(column_name)
+    FROM column_names
+    WHERE table_name = target_table_name
+  );
+  
+  -- Retrieve column names for source table
+  source_column_names := (
+    SELECT ARRAY_AGG(column_name)
+    FROM column_names
+    WHERE table_name = source_table_name
+  );
+  
+  -- Generate Hash Key for Target Table
+  EXECUTE IMMEDIATE '
+    SELECT OBJECT_INSERT(OBJECT_AGG(' || LISTAGG(target_column_names::STRING, ', ') || ', SHA2(CONCAT(' || LISTAGG(target_column_names::STRING, ', ') || '), 256)), ' || LISTAGG(target_column_names::STRING, ', ') || ', ''hash_key'')
+    FROM ' || target_table_name || '
+  ' INTO target_hashes;
+
+  -- Generate Hash Key for Source Table
+  EXECUTE IMMEDIATE '
+    SELECT OBJECT_INSERT(OBJECT_AGG(' || LISTAGG(source_column_names::STRING, ', ') || ', SHA2(CONCAT(' || LISTAGG(source_column_names::STRING, ', ') || '), 256)), ' || LISTAGG(source_column_names::STRING, ', ') || ', ''hash_key'')
+    FROM ' || source_table_name || '
+  ' INTO source_hashes;
+
+  -- Validate Insert Records
+  insert_records := (
+    SELECT key_column
+    FROM TABLE(flatten(source_hashes))
+    WHERE NOT target_hashes:key_column IS NOT NULL
+  );
+
+  -- Validate Update Records
+  update_records := (
+    SELECT s.key_column
+    FROM TABLE(flatten(source_hashes)) s
+    JOIN TABLE(flatten(target_hashes)) t ON s.key_column = t.key_column
+    WHERE s.hash_key <> t.hash_key
+  );
+
+  -- Return Validation Results
+  RETURN PARSE_JSON('{
+    "insert_records": ' || TO_JSON(insert_records) || ',
+    "update_records": ' || TO_JSON(update_records) || '
+  }');
+END;
+$$;
+
+
+
+CALL VALIDATE_INSERT_UPDATE_RECORDS();
+
+
