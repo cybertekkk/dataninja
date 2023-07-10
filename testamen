@@ -385,3 +385,102 @@ These are just example SQL queries to illustrate the concepts. You will need to 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------
+
+
+
+import snowflake.connector
+import win32com.client as win32
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# Snowflake connection details
+snowflake_config = {
+    'user': 'your_user',
+    'password': 'your_password',
+    'account': 'your_account',
+    'warehouse': 'your_warehouse',
+    'database': 'your_database',
+    'schema': 'your_schema'
+}
+
+# Data quality SQL queries
+data_quality_queries = {
+    'Data Completeness': '''
+        SELECT 
+            table_name,
+            (COUNT(*) - COUNT(column_name)) / COUNT(*) AS completeness_percentage
+        FROM 
+            your_table
+        GROUP BY 
+            table_name;
+    ''',
+    'Data Accuracy': '''
+        SELECT 
+            (COUNT(*) - SUM(CASE WHEN column_name = reference_value THEN 1 ELSE 0 END)) / COUNT(*) AS accuracy_rate
+        FROM 
+            your_table;
+    ''',
+    # Add more data quality queries here...
+}
+
+# Connect to Snowflake
+conn = snowflake.connector.connect(**snowflake_config)
+cur = conn.cursor()
+
+# Execute data quality queries
+results = {}
+for query_name, query in data_quality_queries.items():
+    cur.execute(query)
+    data = cur.fetchall()
+    results[query_name] = data
+
+# Close the Snowflake connection
+cur.close()
+conn.close()
+
+# Generate HTML email content
+html_content = '<html><body>'
+for query_name, data in results.items():
+    html_content += '<h2>{}</h2>'.format(query_name)
+    html_content += '<table>'
+    html_content += '<tr><th>Table Name</th><th>Result</th></tr>'
+    for row in data:
+        html_content += '<tr><td>{}</td><td>{}</td></tr>'.format(row[0], row[1])
+    html_content += '</table>'
+
+html_content += '</body></html>'
+
+# Outlook client settings
+outlook = win32.Dispatch('Outlook.Application')
+namespace = outlook.GetNamespace("MAPI")
+recipient_email = 'recipient@example.com'
+subject = 'Data Quality Dashboard'
+body = html_content
+
+# Compose email message
+msg = outlook.CreateItem(0)
+msg.Subject = subject
+msg.HTMLBody = body
+msg.To = recipient_email
+
+# Send email using the Outlook client
+msg.Send()
+
+print('Email sent successfully.')
+
+
