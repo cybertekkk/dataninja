@@ -217,3 +217,171 @@ $$;
 CALL VALIDATE_INSERT_UPDATE_RECORDS();
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+ata Completeness:
+Measure the completeness of data for different tables or key entities in the data warehouse.
+Calculate the percentage of missing or null values for important fields.
+sql
+Copy code
+SELECT 
+    table_name,
+    (COUNT(*) - COUNT(column_name)) / COUNT(*) AS completeness_percentage
+FROM 
+    your_table
+GROUP BY 
+    table_name;
+Data Accuracy:
+Assess the accuracy of data by comparing it against trusted data sources or reference data.
+Calculate data accuracy metrics, such as error rates or data validation results.
+sql
+Copy code
+SELECT 
+    (COUNT(*) - SUM(CASE WHEN column_name = reference_value THEN 1 ELSE 0 END)) / COUNT(*) AS accuracy_rate
+FROM 
+    your_table;
+Data Consistency:
+Evaluate the consistency of data across different tables or data sources in the data warehouse.
+Check for inconsistencies in attribute values or referential integrity.
+sql
+Copy code
+SELECT 
+    column_name,
+    COUNT(DISTINCT column_name) AS unique_values
+FROM 
+    your_table
+GROUP BY 
+    column_name;
+Data Timeliness:
+Monitor the timeliness of data updates in the data warehouse.
+Track the time lag between the source system data updates and data availability in the data warehouse.
+sql
+Copy code
+SELECT 
+    table_name,
+    MAX(warehouse_timestamp_column) - MAX(source_system_timestamp_column) AS data_lag
+FROM 
+    your_table
+GROUP BY 
+    table_name;
+Data Duplication:
+Identify and track duplicate records in the data warehouse.
+Count the number of duplicate records based on unique identifiers.
+sql
+Copy code
+SELECT 
+    column_name,
+    COUNT(*) AS duplicate_count
+FROM 
+    your_table
+GROUP BY 
+    column_name
+HAVING 
+    COUNT(*) > 1;
+Data Integrity:
+Ensure the integrity of the data through constraints and business rules.
+Validate data against predefined rules and identify violations.
+sql
+Copy code
+SELECT 
+    column_name,
+    COUNT(*) AS violation_count
+FROM 
+    your_table
+WHERE 
+    column_name NOT IN (valid_values)
+GROUP BY 
+    column_name;
+Data Load and Processing Status:
+Monitor the status of data loads and processing jobs in the data warehouse.
+Track the success rates, processing times, and any errors or failures encountered during data processing.
+sql
+Copy code
+SELECT 
+    job_name,
+    CASE WHEN status = 'success' THEN 1 ELSE 0 END AS success,
+    CASE WHEN status = 'failure' THEN 1 ELSE 0 END AS failure,
+    processing_time
+FROM 
+    your_job_table;
+Data Quality Trends:
+Analyze data quality trends over time to identify patterns or anomalies.
+Visualize metrics such as completeness, accuracy, or duplication rates over different time periods.
+sql
+Copy code
+SELECT 
+    DATE_TRUNC('month', timestamp_column) AS month,
+    AVG(completeness_percentage) AS avg_completeness,
+    AVG(accuracy_rate) AS avg_accuracy
+FROM 
+    your_table
+GROUP BY 
+    month;
+Exception and Error Management:
+Monitor and track data quality exceptions, errors, or anomalies.
+Log and categorize data quality issues and track their resolution status.
+sql
+Copy code
+SELECT 
+    error_type,
+    COUNT(*) AS error_count
+FROM 
+    your_error_table
+GROUP BY 
+    error_type;
+Data Profiling and Sampling:
+Perform data profiling and sampling techniques to assess data quality.
+Generate summary statistics, data distributions, or outlier analysis.
+sql
+Copy code
+SELECT 
+    column_name,
+    MIN(column_name) AS min_value,
+    MAX(column_name) AS max_value,
+    AVG(column_name) AS avg_value,
+    COUNT(*) AS record_count
+FROM 
+    your_table
+GROUP BY 
+    column_name;
+These are just example SQL queries to illustrate the concepts. You will need to adapt them to your specific database schema and requirements.
+
+
+
+
