@@ -22,3 +22,87 @@ JOIN
 WHERE
     dimension_table.column1 <> reference_table.column1
     OR dimension_table.column2 <> reference_table.column2
+
+
+SELECT *
+FROM dimension_table
+WHERE required_field1 IS NULL OR required_field1 = ''
+   OR required_field2 IS NULL OR required_field2 = ''
+   -- Add additional conditions for other required fields
+
+
+Check for Missing Dimension Records:
+SELECT *
+FROM fact_table f
+LEFT JOIN dimension_table d ON f.dimension_key = d.dimension_key
+WHERE d.dimension_key IS NULL
+
+
+Check for Inactive Dimension Records:
+SELECT *
+FROM fact_table f
+JOIN dimension_table d ON f.dimension_key = d.dimension_key
+WHERE d.status = 'inactive'
+
+
+Check for Consistency in Dimension Keys:
+SELECT *
+FROM fact_table f
+LEFT JOIN dimension_table d ON f.dimension_key = d.dimension_key
+WHERE f.dimension_key IS NOT NULL
+  AND d.dimension_key IS NULL
+
+
+Check for Inconsistent Dimension Keys:
+SELECT
+  f.dimension_key,
+  f.column1,
+  f.column2
+FROM
+  fact_table f
+LEFT JOIN
+  dimension_table d ON f.dimension_key = d.dimension_key
+WHERE
+  f.column1 <> d.column1
+  OR f.column2 <> d.column2
+
+
+Check for Referential Integrity:
+SELECT *
+FROM fact_table f
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM dimension_table d
+  WHERE f.dimension_key = d.dimension_key
+)
+
+
+
+Check for Missing Dimension Attributes:
+SELECT *
+FROM dimension_table d
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM fact_table f
+  WHERE f.dimension_key = d.dimension_key
+    AND (f.attribute1 IS NOT NULL OR f.attribute2 IS NOT NULL)
+)
+
+
+Check for Invalid Dimension Keys:
+SELECT *
+FROM fact_table f
+LEFT JOIN dimension_table d ON f.dimension_key = d.dimension_key
+WHERE f.dimension_key IS NOT NULL AND d.dimension_key IS NULL
+
+
+
+Check for Missing Dimension Attributes:
+SELECT *
+FROM dimension_table d
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM fact_table f
+  WHERE f.dimension_key = d.dimension_key
+    AND (f.attribute1 IS NOT NULL OR f.attribute2 IS NOT NULL)
+)
