@@ -179,13 +179,13 @@ BEGIN
   
   -- Generate Hash Key for Target Table
   EXECUTE IMMEDIATE '
-    SELECT OBJECT_INSERT(OBJECT_AGG(' || LISTAGG(target_column_names::STRING, ', ') || ', SHA2(CONCAT(' || LISTAGG(target_column_names::STRING, ', ') || '), 256)), ' || LISTAGG(target_column_names::STRING, ', ') || ', ''hash_key'')
+    SELECT OBJECT_INSERT(OBJECT_AGG(' || LISTAGG(target_column_names::STRING, ', ') || ', MD5(CONCAT(' || LISTAGG(target_column_names::STRING, ', ') || '))), ' || LISTAGG(target_column_names::STRING, ', ') || ', ''hash_key'')
     FROM ' || target_table_name || '
   ' INTO target_hashes;
 
   -- Generate Hash Key for Source Table
   EXECUTE IMMEDIATE '
-    SELECT OBJECT_INSERT(OBJECT_AGG(' || LISTAGG(source_column_names::STRING, ', ') || ', SHA2(CONCAT(' || LISTAGG(source_column_names::STRING, ', ') || '), 256)), ' || LISTAGG(source_column_names::STRING, ', ') || ', ''hash_key'')
+    SELECT OBJECT_INSERT(OBJECT_AGG(' || LISTAGG(source_column_names::STRING, ', ') || ', MD5(CONCAT(' || LISTAGG(source_column_names::STRING, ', ') || '))), ' || LISTAGG(source_column_names::STRING, ', ') || ', ''hash_key'')
     FROM ' || source_table_name || '
   ' INTO source_hashes;
 
