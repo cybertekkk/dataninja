@@ -1,0 +1,24 @@
+Check for New Records:
+SELECT *
+FROM dimension_table
+WHERE update_date > 'last_validation_date'
+Check for Deleted Records:
+SELECT *
+FROM reference_table
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM dimension_table
+    WHERE dimension_table.key_column = reference_table.key_column
+)
+Check for Updates:
+SELECT
+    dimension_table.key_column,
+    dimension_table.column1,
+    dimension_table.column2
+FROM
+    dimension_table
+JOIN
+    reference_table ON dimension_table.key_column = reference_table.key_column
+WHERE
+    dimension_table.column1 <> reference_table.column1
+    OR dimension_table.column2 <> reference_table.column2
